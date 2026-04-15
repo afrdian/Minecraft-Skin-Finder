@@ -1,6 +1,13 @@
-# Minecraft Skin Viewer
+# Kelompok ...
 
-Minecraft Skin Viewer adalah aplikasi web sederhana yang dibuat menggunakan **HTML, CSS, dan JavaScript murni (tanpa framework)** untuk menampilkan skin Minecraft berdasarkan **username player**.
+Anggota : 
+
+-
+- Athalariiq Fildzahhanan Ardian (245150707111052)
+-
+-
+
+Minecraft Skin Viewer adalah aplikasi web sederhana yang dibuat menggunakan **HTML, CSS, dan JavaScript untuk menampilkan skin Minecraft dengan **username player**.
 
 Aplikasi ini mengambil data dari **Mojang API**, mendecode texture skin yang diencode dalam **Base64**, lalu menampilkan:
 
