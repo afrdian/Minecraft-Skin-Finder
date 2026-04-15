@@ -2,7 +2,7 @@
 
 Anggota : 
 
--
+- Gede Raditya Dharma Putra Ayudia (245150700111028)
 - Athalariiq Fildzahhanan Ardian (245150707111052)
 -
 - Zeva Wyakta Zaylendra (245150700111033)
