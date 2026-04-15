@@ -5,7 +5,7 @@ Anggota :
 -
 - Athalariiq Fildzahhanan Ardian (245150707111052)
 -
--
+- Zeva Wyakta Zaylendra
 
 Minecraft Skin Viewer adalah aplikasi web sederhana yang dibuat menggunakan **HTML, CSS, dan JavaScript untuk menampilkan skin Minecraft dengan **username player**.
 
