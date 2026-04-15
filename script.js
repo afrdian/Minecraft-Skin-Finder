@@ -1,202 +1,169 @@
-// Mengambil elemen HTML dari halaman menggunakan ID
-// Elemen ini digunakan untuk mengambil input username dari user
-const usernameInput = document.getElementById("username");
-
-// Tombol untuk melakukan pencarian skin
+const input = document.getElementById("username");
 const searchBtn = document.getElementById("searchBtn");
+const loading = document.getElementById("loading");
+const error = document.getElementById("error");
+const viewer = document.getElementById("viewer");
 
-// Canvas untuk menampilkan body Minecraft
 const bodyCanvas = document.getElementById("bodyCanvas");
-
-// Canvas untuk menampilkan wajah player
 const faceCanvas = document.getElementById("faceCanvas");
-
-// Canvas untuk menampilkan texture skin mentah
 const rawCanvas = document.getElementById("rawCanvas");
 
-// Elemen untuk menampilkan nama player
 const playerName = document.getElementById("playerName");
-
-// Elemen untuk menampilkan UUID player
 const playerUUID = document.getElementById("playerUUID");
+const modelType = document.getElementById("modelType");
 
-// Tombol untuk download skin
 const downloadBtn = document.getElementById("downloadBtn");
 
-// Elemen untuk menampilkan pesan error
-const errorMsg = document.getElementById("errorMsg");
+let skinURL = "";
 
-// Elemen untuk menampilkan loading
-const loading = document.getElementById("loading");
+searchBtn.onclick = search;
 
-
-// Event listener pada tombol search
-// Ketika tombol diklik maka fungsi searchPlayer akan dijalankan
-searchBtn.addEventListener("click", searchPlayer);
-
-
-// Event listener ketika user menekan tombol Enter di input
-// Jika tombol Enter ditekan maka searchPlayer akan dijalankan
-usernameInput.addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
-        searchPlayer();
-    }
+input.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") search();
 });
 
+async function proxyFetch(url) {
 
-// Fungsi utama untuk mencari player Minecraft
-async function searchPlayer() {
+    const proxy = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
 
-    // Mengambil username yang dimasukkan user
-    const username = usernameInput.value.trim();
+    const res = await fetch(proxy);
 
-    // Jika username kosong maka proses dihentikan
-    if (!username) return;
+    if (!res.ok) {
+        throw new Error("Proxy failed");
+    }
 
-    // Menampilkan loading ketika request API sedang berjalan
-    loading.style.display = "block";
+    const text = await res.text();
 
-    // Menyembunyikan pesan error
-    errorMsg.style.display = "none";
+    if (!text || text.trim() === "") {
+        throw new Error("Empty response");
+    }
+
+    return JSON.parse(text);
+}
+
+async function search() {
+
+    error.textContent = "";
+    viewer.style.display = "none";
+    loading.textContent = "Loading...";
 
     try {
 
-        // STEP 1 : MENGAMBIL UUID
-        // Membuat URL API Mojang untuk mendapatkan UUID dari username
-        const uuidUrl = `https://api.mojang.com/users/profiles/minecraft/${username}`;
+        const username = input.value.trim();
 
-        // Menggunakan CORS proxy agar API dapat diakses dari browser
-        const proxyUUID = `https://api.allorigins.win/get?url=${encodeURIComponent(uuidUrl)}`;
+        if (!username) {
+            loading.textContent = "";
+            return;
+        }
 
-        // Melakukan request ke API
-        const uuidResponse = await fetch(proxyUUID);
+        // Step 1: UUID lookup
+        const profile = await proxyFetch(
+            `https://api.mojang.com/users/profiles/minecraft/${username}`
+        );
 
-        // Mengubah response menjadi JSON
-        const uuidData = await uuidResponse.json();
+        if (!profile || !profile.id) {
+            throw new Error("User not found");
+        }
 
-        // Parsing data dari proxy
-        const uuidJson = JSON.parse(uuidData.contents);
+        const uuid = profile.id;
 
-        // Mengambil UUID dari response
-        const uuid = uuidJson.id;
+        // Step 2: skin data
+        const session = await proxyFetch(
+            `https://sessionserver.mojang.com/session/minecraft/profile/${uuid}`
+        );
 
-        // STEP 2 : MENGAMBIL PROFILE PLAYER
-        // URL API untuk mendapatkan data skin
-        const profileUrl = `https://sessionserver.mojang.com/session/minecraft/profile/${uuid}`;
+        const texturesBase64 = session.properties.find(p => p.name === "textures").value;
 
-        // Menggunakan proxy kembali
-        const proxyProfile = `https://api.allorigins.win/get?url=${encodeURIComponent(profileUrl)}`;
+        const textures = JSON.parse(atob(texturesBase64));
 
-        // Request profile player
-        const profileResponse = await fetch(proxyProfile);
+        skinURL = textures.textures.SKIN.url;
 
-        // Mengubah response menjadi JSON
-        const profileData = await profileResponse.json();
+        const model =
+            textures.textures.SKIN.metadata?.model === "slim"
+                ? "Alex (Slim)"
+                : "Steve (Classic)";
 
-        // Parsing response proxy
-        const profileJson = JSON.parse(profileData.contents);
-
-        // STEP 3 : DECODE TEXTURE
-        // Mengambil property textures dari response
-        const textureBase64 = profileJson.properties[0].value;
-
-        // Decode Base64 menjadi JSON
-        const textureJson = JSON.parse(atob(textureBase64));
-
-        // Mengambil URL skin dari JSON
-        const skinUrl = textureJson.textures.SKIN.url;
-
-        // STEP 4 : LOAD IMAGE SKIN
-        // Membuat object image baru
-        const img = new Image();
-
-        // Mengaktifkan crossOrigin agar gambar bisa digunakan di canvas
-        img.crossOrigin = "anonymous";
-
-        // Set source image ke URL skin
-        img.src = skinUrl;
-
-        // Ketika gambar selesai dimuat maka renderSkin dijalankan
-        img.onload = function () {
-            renderSkin(img);
-        };
-
-        // STEP 5 : MENAMPILKAN INFO PLAYER
-        // Menampilkan nama player di halaman
-        playerName.textContent = "Name: " + username;
-
-        // Menampilkan UUID player
+        playerName.textContent = "Player: " + profile.name;
         playerUUID.textContent = "UUID: " + uuid;
+        modelType.textContent = "Model: " + model;
 
-        // STEP 6 : DOWNLOAD SKIN
-        // Event ketika tombol download diklik
-        downloadBtn.onclick = function () {
+        await renderSkin();
 
-            // Membuat elemen link sementara
-            const link = document.createElement("a");
+        loading.textContent = "";
+        viewer.style.display = "block";
 
-            // Mengisi link dengan URL skin
-            link.href = skinUrl;
+    } catch (err) {
 
-            // Nama file yang akan di download
-            link.download = username + "_skin.png";
+        console.error(err);
 
-            // Menjalankan proses download
-            link.click();
-        };
+        loading.textContent = "";
+        error.textContent = "Player not found or API error.";
 
-    } catch (error) {
-
-        // Jika terjadi error maka tampilkan pesan error
-        errorMsg.style.display = "block";
-
-    } finally {
-
-        // Menyembunyikan loading ketika proses selesai
-        loading.style.display = "none";
     }
 }
 
+function renderSkin() {
 
+    return new Promise((resolve) => {
 
-// Fungsi untuk merender skin ke canvas
-function renderSkin(img) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = skinURL;
 
-    // Mengambil context dari canvas (untuk menggambar)
-    const bodyCtx = bodyCanvas.getContext("2d");
-    const faceCtx = faceCanvas.getContext("2d");
-    const rawCtx = rawCanvas.getContext("2d");
+        img.onload = () => {
 
-    // MENAMPILKAN RAW TEXTURE
-    // Menggambar texture skin asli ke canvas
-    rawCtx.drawImage(img, 0, 0, 64, 64, 0, 0, 256, 256);
+            const bodyCtx = bodyCanvas.getContext("2d");
+            const faceCtx = faceCanvas.getContext("2d");
+            const rawCtx = rawCanvas.getContext("2d");
 
+            bodyCtx.imageSmoothingEnabled = false;
+            faceCtx.imageSmoothingEnabled = false;
+            rawCtx.imageSmoothingEnabled = false;
 
-    // MENAMPILKAN WAJAH PLAYER
-    // Mengambil bagian wajah dari skin
-    // Koordinat wajah di skin Minecraft adalah (8,8) ukuran 8x8
-    faceCtx.drawImage(img, 8, 8, 8, 8, 0, 0, 128, 128);
+            bodyCtx.clearRect(0, 0, bodyCanvas.width, bodyCanvas.height);
 
+            // head
+            bodyCtx.drawImage(img, 8, 8, 8, 8, 28, 0, 8, 8);
 
-    // MENAMPILKAN BODY PLAYER
-    // Clear canvas sebelum menggambar
-    bodyCtx.clearRect(0, 0, bodyCanvas.width, bodyCanvas.height);
+            // torso
+            bodyCtx.drawImage(img, 20, 20, 8, 12, 28, 8, 8, 12);
 
-    // Head
-    bodyCtx.drawImage(img, 8, 8, 8, 8, 96, 0, 64, 64);
+            // arms
+            bodyCtx.drawImage(img, 44, 20, 4, 12, 24, 8, 4, 12);
+            bodyCtx.drawImage(img, 36, 52, 4, 12, 36, 8, 4, 12);
 
-    // Body
-    bodyCtx.drawImage(img, 20, 20, 8, 12, 96, 64, 64, 96);
+            // legs
+            bodyCtx.drawImage(img, 4, 20, 4, 12, 28, 20, 4, 12);
+            bodyCtx.drawImage(img, 20, 52, 4, 12, 32, 20, 4, 12);
 
-    // Left Arm
-    bodyCtx.drawImage(img, 44, 20, 4, 12, 48, 64, 32, 96);
+            // face
+            faceCtx.clearRect(0, 0, 64, 64);
+            faceCtx.drawImage(img, 8, 8, 8, 8, 0, 0, 64, 64);
 
-    // Right Arm
-    bodyCtx.drawImage(img, 44, 20, 4, 12, 160, 64, 32, 96);
+            // raw texture
+            rawCtx.clearRect(0, 0, 256, 256);
+            rawCtx.drawImage(img, 0, 0, 256, 256);
 
-    // Left Leg
-    bodyCtx.drawImage(img, 4, 20, 4, 12, 96, 160, 32, 96);
+            downloadBtn.onclick = () => {
 
-    // Right Leg
-    bodyCtx.drawImage(img, 4, 20, 4, 12, 128, 160, 32, 96);
+                const a = document.createElement("a");
+                a.href = skinURL;
+                a.download = "minecraft_skin.png";
+                a.click();
+
+            };
+
+            resolve();
+
+        };
+
+        img.onerror = () => {
+
+            error.textContent = "Failed to load skin image.";
+            resolve();
+
+        };
+
+    });
+
 }
