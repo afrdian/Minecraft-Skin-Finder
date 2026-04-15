@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Minecraft Skin Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="card">
+
+        <h1>Minecraft Skin Viewer</h1>
+
+        <div class="search">
+            <input id="username" type="text" placeholder="Enter Minecraft username">
+            <button id="searchBtn">Search</button>
+        </div>
+
+        <div id="loading" class="loading"></div>
+        <div id="error" class="error"></div>
+
+        <div id="viewer" class="viewer">
+
+            <div class="canvas-grid">
+                <canvas id="bodyCanvas" width="64" height="128"></canvas>
+                <canvas id="faceCanvas" width="64" height="64"></canvas>
+                <canvas id="rawCanvas" width="256" height="256"></canvas>
+            </div>
+
+            <div class="playerinfo">
+                <div id="playerName"></div>
+                <div id="playerUUID"></div>
+                <div id="modelType"></div>
+            </div>
+
+            <div class="download">
+                <button id="downloadBtn">Download Skin</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
