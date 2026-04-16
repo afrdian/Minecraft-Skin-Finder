@@ -4,7 +4,7 @@ Anggota :
 
 - Gede Raditya Dharma Putra Ayudia (245150700111028)
 - Athalariiq Fildzahhanan Ardian (245150707111052)
--
+- I Gusti Ngurah Anantawijaya Mahardika (245150700111027)
 - Zeva Wyakta Zaylendra (245150700111033)
 
 Minecraft Skin Viewer adalah aplikasi web sederhana yang dibuat menggunakan **HTML, CSS, dan JavaScript untuk menampilkan skin Minecraft dengan **username player**.
