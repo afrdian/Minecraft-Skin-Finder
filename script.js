@@ -26,19 +26,17 @@ async function proxyFetch(url) {
 
     const proxy = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
 
-    const res = await fetch(proxy);
+    try {
+        const res = await axios.get(proxy);
+        
+        if (!res.data) {
+            throw new Error("Empty response");
+        }
 
-    if (!res.ok) {
-        throw new Error("Proxy failed");
+        return res.data;
+    } catch (err) {
+        throw new Error("Proxy failed: " + err.message);
     }
-
-    const text = await res.text();
-
-    if (!text || text.trim() === "") {
-        throw new Error("Empty response");
-    }
-
-    return JSON.parse(text);
 }
 
 async function search() {
